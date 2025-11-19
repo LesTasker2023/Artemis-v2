@@ -1,0 +1,109 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Scrollbar styling */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(96, 165, 250, 0.3) rgba(9, 13, 19, 0.5);
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: rgba(9, 13, 19, 0.5);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: rgba(96, 165, 250, 0.3);
+    border-radius: 4px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgba(96, 165, 250, 0.5);
+  }
+
+  /* Selection styling */
+  ::selection {
+    background: rgba(96, 165, 250, 0.3);
+    color: white;
+  }
+
+  body {
+    @apply bg-background text-white font-sans antialiased;
+  }
+}
+
+/* Animations */
+@layer utilities {
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 10px rgba(96, 165, 250, 0.2);
+    }
+    to {
+      box-shadow: 0 0 20px rgba(96, 165, 250, 0.4);
+    }
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+  }
+
+  .animate-slide-in-from-top {
+    animation: slideInFromTop 0.3s ease-out;
+  }
+
+  @keyframes slideInFromTop {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Recharts customization */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: rgba(96, 165, 250, 0.1);
+}
+
+.recharts-text {
+  fill: rgba(96, 165, 250, 0.6);
+  font-size: 12px;
+  font-family: "JetBrains Mono", monospace;
+}
+
+.recharts-tooltip-wrapper {
+  background: rgba(13, 17, 23, 0.95) !important;
+  border: 1px solid rgba(96, 165, 250, 0.3) !important;
+  border-radius: 8px !important;
+  padding: 8px !important;
+}
+
+/* Icon color override - default icons to orange */
+svg:not([class*="text-"]):not([class*="text-green"]):not(
+    [class*="text-red"]
+  ):not([class*="text-success"]):not([class*="text-danger"]):not(
+    [class*="text-warning"]
+  ) {
+  color: #fb923c;
+}

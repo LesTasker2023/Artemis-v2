@@ -1,0 +1,75 @@
+appId: com.lestasker.artemis
+productName: ARTEMIS
+copyright: Copyright © 2024 Les Tasker
+
+directories:
+  output: dist-release
+  buildResources: build
+
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
+
+# Windows Configuration
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+  publisherName: Les Tasker
+  verifyUpdateCodeSignature: false
+  signingHashAlgorithms: [] # Disable signing
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: ARTEMIS
+
+# macOS Configuration
+mac:
+  target:
+    - dmg
+    - zip
+  icon: build/icon.icns
+  category: public.app-category.games
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+# Linux Configuration
+linux:
+  target:
+    - AppImage
+    - deb
+    - rpm
+  icon: build/icon.png
+  category: Game
+  maintainer: Les Tasker <lestasker2023@example.com>
+
+# Auto-Update Configuration (GitHub Releases)
+publish:
+  provider: github
+  owner: LesTasker2023
+  repo: ARTEMIS
+  releaseType: release
+  publishAutoUpdate: true
+
+# Build Settings
+compression: maximum
+electronDownload:
+  cache: .electron-cache
