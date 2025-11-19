@@ -4,6 +4,7 @@
  */
 
 import { createSignal } from 'solid-js';
+import { DiscordConfig } from '../../config/discord';
 
 export interface UserSettings {
   // User identity
@@ -31,9 +32,9 @@ const defaultSettings: UserSettings = {
     visibility: 'off',
     shareSessionStats: true,
     updateInterval: 30000, // 30 seconds
-    discordWebhookUrl: import.meta.env.VITE_DISCORD_WEBHOOK_URL || '',
-    discordBotToken: import.meta.env.VITE_DISCORD_BOT_TOKEN || '',
-    discordChannelId: import.meta.env.VITE_DISCORD_CHANNEL_ID || '',
+    discordWebhookUrl: DiscordConfig.webhookUrl,
+    discordBotToken: DiscordConfig.botToken,
+    discordChannelId: DiscordConfig.channelId,
   },
 };
 

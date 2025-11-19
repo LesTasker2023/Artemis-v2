@@ -1,6 +1,6 @@
 {
     "name": "artemis-v2",
-    "version": "2.0.0-alpha.2",
+    "version": "2.0.0-alpha.3",
     "description": "ARTEMIS v2 - TypeScript rewrite with immutable architecture",
     "type": "module",
     "main": "dist-electron/main.cjs",
