@@ -15,7 +15,7 @@ export const CALYPSO_CONFIG = {
   COORDINATE_MULTIPLIER: 2.223,
   OFFSET_X: -0.2223,
   OFFSET_Y: 0.333,
-  MAP_IMAGE: '/calypso-map.webp'
+  MAP_IMAGE: './calypso-map.webp'
 };
 
 /**
