@@ -28,9 +28,9 @@ const defaultSettings: UserSettings = {
   username: 'Hunter',
   liveGPS: {
     enabled: false, // GPS OFF by default
-    discordWebhookUrl: 'https://discord.com/api/webhooks/1437230958221988024/UJaRA7H6mpIqDrMdYXELrgHtptHJNV6JVDkosqgVR5vZ-m43LHySH3uNjrORzseTeeB9',
-    discordBotToken: 'MTQyNTE4MjI1NjE3NDk5MzUwOA.Ga560B.8mouqeqGLCxabeeePUE9pPhlyKEJq84N2i8OYU',
-    discordChannelId: '1439679193481871510',
+    discordWebhookUrl: import.meta.env.DISCORD_WEBHOOK_URL || '',
+    discordBotToken: import.meta.env.DISCORD_BOT_TOKEN || '',
+    discordChannelId: import.meta.env.DISCORD_CHANNEL_ID || '',
     visibility: 'off',
     shareSessionStats: true,
     updateInterval: 30000, // 30 seconds
