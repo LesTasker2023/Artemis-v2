@@ -69,6 +69,8 @@ contextBridge.exposeInMainWorld('electron', {
 
   // Loadout operations
   loadout: {
+    create: (loadout: Loadout) => ipcRenderer.invoke('loadout:save', loadout),
+    update: (loadout: Loadout) => ipcRenderer.invoke('loadout:save', loadout),
     save: (loadout: Loadout) => ipcRenderer.invoke('loadout:save', loadout),
     findById: (id: string) => ipcRenderer.invoke('loadout:findById', id),
     findAll: (userId?: string) => ipcRenderer.invoke('loadout:findAll', userId),

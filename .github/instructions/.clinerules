@@ -1,0 +1,247 @@
+# ARTEMIS Development Rules & Architecture
+
+## Project Overview
+ARTEMIS is a mission control dashboard for Entropia Universe hunters that aggregates:
+- OCR data capture (coordinates, loot, auction prices)
+- Session tracking (hunting stats, P/L, kills, accuracy)
+- GPS broadcasting (Discord IPC for team location sharing)
+- Loadout management (weapon/armor configurations)
+- Loot database (searchable, reviewable items)
+
+**Core Philosophy:** Artemis is a controller/orchestrator - NOT a game client. It coordinates data streams and provides unified analytics.
+
+## CURRENT STATE: v1 (Legacy) + v2 (TypeScript Rewrite)
+
+**v1 (Current):** Vanilla JS + HTML in `artemis.html` - Keep working, no breaking changes
+**v2 (Future):** TypeScript + Solid.js in `artemis-v2/` - Built in parallel, replaces v1 when ready
+
+See `TYPESCRIPT_PLAN.md` for v2 architecture details.
+
+---
+
+## Architecture Principles
+
+### 1. **Files ARE Source of Truth, localStorage is Cache**
+```
+data/userData/
+  userSessions/     <- Permanent storage
+  userLoadouts/     <- Permanent storage
+
+localStorage:
+  activeSession     <- Current session in memory (auto-saved to file every 5min)
+  activeLoadout     <- Current loadout (stays active after save, NO unmounting)
+  recentSessions[]  <- Last 10 for quick access (cache)
+  recentLoadouts[]  <- Last 5 for quick switching (cache)
+```
+
+**RULE:** Never unmount active session on save. Users continue adding data during hunts.
+**RULE:** Auto-save intervals (5min) + manual "End Session" button = UX win
+
+### 2. **Data Flow Pattern**
+```
+User Action → Memory Update → Debounced File Write → Cache Update
+                    ↓
+                UI Refresh
+```
+
+**NEVER:**
+- Sync writes on every event (too slow)
+- Clear active state on save (breaks user flow)
+- Use localStorage as only source (crash = data loss)
+
+### 3. **Parallel Development - Zero Breaking Changes**
+```javascript
+// Phase 1: New engine alongside old
+const USE_NEW_ENGINE = false; // Feature flag
+
+function saveData(data) {
+  // Old system (keep working)
+  legacySave(data);
+  
+  // New system (test in parallel)
+  if (USE_NEW_ENGINE) {
+    newDataEngine.save(data);
+  }
+}
+```
+
+**Migration Steps:**
+1. Build new engine in `data/newDataEngine.js`
+2. Run both systems in parallel (1 week validation)
+3. Compare outputs, ensure data integrity
+4. Flip flag, monitor for 2 weeks
+5. Remove old code
+
+---
+
+## Key Features to Build
+
+### Phase 1: Data Layer (Foundation)
+- [ ] `newDataEngine.js` - Unified save/load API
+- [ ] Auto-sync to files (debounced writes)
+- [ ] Crash recovery (pending writes queue)
+- [ ] Version migration (handle old formats)
+
+### Phase 2: GPS Analytics (Location Intelligence)
+- [ ] Hunting zone detection (cluster GPS points)
+- [ ] Profit per zone (which areas make money?)
+- [ ] Heatmap visualization (canvas overlay on map)
+- [ ] Death zones (where do you die most?)
+- [ ] Route optimization (best path between spawns)
+
+**Data Structure:**
+```javascript
+{
+  huntingZones: [{
+    center: [lon, lat],
+    radius: 500,
+    sessionsHere: 15,
+    totalProfit: 2500,
+    avgProfitPerHour: 185,
+    mobTypes: { "Ambulimax Young": { kills: 45, profit: 800 } },
+    dangerLevel: 0.12 // deaths per 100 encounters
+  }]
+}
+```
+
+### Phase 3: Mob ID Integration (Mob Intelligence)
+- [ ] Link Mob ID → GPS → Sessions
+- [ ] Per-mob profitability analysis
+- [ ] Best loadout recommendations per mob
+- [ ] Ammo efficiency tracking (damage per PED)
+- [ ] Spawn rate analysis
+
+**Data Structure:**
+```javascript
+{
+  mobDatabase: {
+    "Ambulimax Young": {
+      totalKills: 198,
+      avgDamageToKill: 450,
+      avgAmmoUsed: 35,
+      profitPerKill: 8.5,
+      locations: [{ zone: "North Swamp", encounters: 120 }],
+      loadoutPerformance: {
+        "loadout_1": { efficiency: 0.92, profit: 850 }
+      }
+    }
+  }
+}
+```
+
+### Phase 4: Analytics Dashboard (User-Facing Power)
+**New Tabs:**
+- 📍 **Heatmap** - Where you hunt, colored by profit
+- 📊 **Mob Intel** - Per-mob stats, best loadout per mob
+- ⚡ **Efficiency** - Ammo cost vs return, time efficiency
+- 🎯 **Goals** - Set targets (1000 PED profit), track progress
+- 🔬 **Compare** - Loadout A vs B side-by-side
+
+**Key Metrics Users Want:**
+- Profit Per Hour (not just total P/L) ← **PRIORITY**
+- Return Rate (%) with trend indicators
+- Ammo Efficiency (damage per PED spent)
+- Best Mob/Location combo (profit density)
+- Loot Frequency (globals per 100 kills)
+
+---
+
+## Critical Gaps in Current Entropia Tools
+
+### What's Missing:
+1. **No loot markup tracking** - TT value vs Market Value gap
+2. **No time-based analysis** - Everything is per-session, not per-hour
+3. **No mob-to-location linking** - Which mobs where = profit?
+4. **No loadout comparison** - Can't A/B test gear effectiveness
+5. **No predictive analytics** - No "switch mobs now" suggestions
+
+### ARTEMIS Competitive Advantages:
+- Real-time GPS + Mob ID integration
+- Location-based profitability (heatmaps)
+- Loadout performance tracking per mob type
+- Team coordination (shared GPS, avoid overlap)
+- Continuous session tracking (not manual log entries)
+
+---
+
+## Development Workflow
+
+### Before Starting Any Feature:
+1. **Check for breaking changes** - Will this break existing saves?
+2. **Plan parallel path** - Can old system still work?
+3. **Write migration code** - How do old files convert?
+4. **Test with real data** - Use existing session files
+
+### Code Style:
+- Prefer pure functions over mutation
+- Add JSDoc comments to all public APIs
+- Use `console.log('✅ Success')` for user-visible events
+- Use `console.warn('⚠️ Warning')` for recoverable issues
+- Use `console.error('❌ Error')` for failures
+
+### Git Strategy:
+- Commit after each feature (not mid-work)
+- Use descriptive messages: "Add GPS heatmap clustering algorithm"
+- Never commit `data/userData/*` (user privacy)
+
+---
+
+## Active Development Focus
+
+### Immediate Priorities:
+1. ✅ Fix GPS map rendering (DONE - proper aspect ratio)
+2. ✅ Session rename modal (DONE - replaced prompt())
+3. 🔄 Create `.gitignore` (protect user data)
+4. 🔄 Set up GitHub remote
+5. 🔄 Build profit-per-hour calculation (easy win)
+6. 🔄 Prototype GPS heatmap (visual impact)
+
+### Next Sprint:
+- [ ] `newDataEngine.js` foundation
+- [ ] Auto-save debouncing
+- [ ] Crash recovery system
+- [ ] Profit-per-hour in session cards
+
+---
+
+## Common Pitfalls to Avoid
+
+1. **Don't unmount active sessions on save** - Breaks user flow
+2. **Don't sync-write every event** - Too slow, kills UX
+3. **Don't ignore crash recovery** - Users will lose data
+4. **Don't forget version migration** - Old saves must load
+5. **Don't over-engineer** - Ship features, iterate on feedback
+
+---
+
+## Questions to Ask Before Adding Features
+
+1. Does this help users make money? (profit optimization)
+2. Does this save time? (efficiency analysis)
+3. Does this prevent losses? (danger zones, mob warnings)
+4. Does this improve teamwork? (GPS coordination)
+5. Does this replace manual tracking? (automation)
+
+If answer is NO to all 5 → Don't build it.
+
+---
+
+## Reference: Current Tech Stack
+- **Frontend:** HTML + CSS + Vanilla JS (no framework)
+- **Backend:** Electron (main.js) + Node.js APIs
+- **Data:** JSON files + localStorage cache
+- **IPC:** Discord Rich Presence for GPS
+- **OCR:** Tesseract.js for coordinate/loot capture
+- **Storage:** `data/userData/{sessions,loadouts}`
+
+## Reference: Key Files
+- `artemis.html` - Main UI (12k+ lines, needs refactor eventually)
+- `main.js` - Electron main process
+- `hunting.js` - Session tracking logic
+- `data/userDataManager.js` - Current save/load system
+- `gps-ocr-clean.js` - OCR coordinate extraction
+- `loot-database-manager.js` - Loot item tracking
+
+---
+
+**Last Updated:** 2024-11-17 (Initial creation)

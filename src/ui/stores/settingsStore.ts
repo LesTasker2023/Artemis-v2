@@ -13,12 +13,12 @@ export interface UserSettings {
   // Live GPS settings
   liveGPS: {
     enabled: boolean;
-    discordWebhookUrl: string;
-    discordBotToken: string; // Bot token for reading messages
-    discordChannelId: string; // Channel ID to read messages from
     visibility: 'public' | 'friends' | 'off';
     shareSessionStats: boolean;
     updateInterval: number; // milliseconds
+    discordWebhookUrl: string;
+    discordBotToken: string;
+    discordChannelId: string;
   };
 }
 
@@ -28,12 +28,12 @@ const defaultSettings: UserSettings = {
   username: 'Hunter',
   liveGPS: {
     enabled: false, // GPS OFF by default
-    discordWebhookUrl: import.meta.env.DISCORD_WEBHOOK_URL || '',
-    discordBotToken: import.meta.env.DISCORD_BOT_TOKEN || '',
-    discordChannelId: import.meta.env.DISCORD_CHANNEL_ID || '',
     visibility: 'off',
     shareSessionStats: true,
     updateInterval: 30000, // 30 seconds
+    discordWebhookUrl: import.meta.env.VITE_DISCORD_WEBHOOK_URL || '',
+    discordBotToken: import.meta.env.VITE_DISCORD_BOT_TOKEN || '',
+    discordChannelId: import.meta.env.VITE_DISCORD_CHANNEL_ID || '',
   },
 };
 
@@ -51,6 +51,10 @@ function loadSettings(): UserSettings {
           ...defaultSettings.liveGPS,
           ...(parsed.liveGPS || {}),
           enabled: false, // Force GPS OFF on load (user must manually enable)
+          // Always use latest Discord credentials from defaultSettings (don't persist in localStorage)
+          discordWebhookUrl: defaultSettings.liveGPS.discordWebhookUrl,
+          discordBotToken: defaultSettings.liveGPS.discordBotToken,
+          discordChannelId: defaultSettings.liveGPS.discordChannelId,
         },
       };
       return merged;

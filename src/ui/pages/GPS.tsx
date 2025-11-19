@@ -227,13 +227,7 @@ export function GPS() {
     setIsConfigured(true);
     console.log("[GPS] 📡 LiveGPS service initialized");
 
-    // Only start polling if GPS is enabled
-    if (!gpsEnabled()) {
-      console.log("[GPS] ⏸️ GPS disabled - polling paused");
-      return;
-    }
-
-    // Poll Discord channel for updates every 3 seconds
+    // Always start polling Discord to see other hunters (independent of GPS broadcast toggle)
     if (discordPollInterval) {
       clearInterval(discordPollInterval);
     }

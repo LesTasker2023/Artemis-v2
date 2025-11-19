@@ -9,6 +9,8 @@ directories:
 files:
   - dist/**/*
   - dist-electron/**/*
+  - splash.html
+  - data/**/*
   - package.json
 
 # Windows Configuration

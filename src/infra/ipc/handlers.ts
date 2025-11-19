@@ -42,10 +42,12 @@ export function registerIpcHandlers(): void {
 
   // Initialize equipment data service
   const equipmentService = getEquipmentDataService();
-  // Get the app root directory and go up one level to ARTEMIS folder
+  // Always use the project's data folder (works in both dev and production when bundled)
   const appPath = app.getAppPath();
-  const dataPath = path.join(appPath, '..', 'data');
+  const dataPath = path.join(appPath, 'data');
+  
   console.log('[IPC] App path:', appPath);
+  console.log('[IPC] Dev mode:', !!process.env.VITE_DEV_SERVER_URL);
   console.log('[IPC] Loading equipment data from:', dataPath);
   equipmentService.loadData(dataPath).catch(error => {
     console.error('[IPC] Failed to load equipment data:', error);

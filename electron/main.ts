@@ -12,6 +12,25 @@ autoUpdater.autoInstallOnAppQuit = true;
 // Electron app lifecycle
 let mainWindow: typeof BrowserWindow | null = null;
 let hudWindow: typeof BrowserWindow | null = null;
+let splashWindow: typeof BrowserWindow | null = null;
+
+function createSplashScreen() {
+  splashWindow = new BrowserWindow({
+    width: 500,
+    height: 350,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  splashWindow.loadFile(path.join(__dirname, '../splash.html'));
+  splashWindow.center();
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -31,13 +50,19 @@ function createWindow() {
   // Load app - dev server or production build
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-    mainWindow.webContents.openDevTools();
+    // Dev tools disabled by default - press F12 to open manually
+    // mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
-  // Show window when ready
+  // Show window when ready and close splash
   mainWindow.once('ready-to-show', () => {
+    // Close splash screen
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.close();
+      splashWindow = null;
+    }
     mainWindow?.show();
   });
 
@@ -154,7 +179,12 @@ autoUpdater.on('update-downloaded', (info) => {
 // App lifecycle events
 app.whenReady().then(() => {
   registerIpcHandlers();
-  createWindow();
+  createSplashScreen(); // Show splash first
+  
+  // Wait a moment then create main window
+  setTimeout(() => {
+    createWindow();
+  }, 500);
 
   // Check for updates after window is ready (skip in dev mode)
   if (!process.env.VITE_DEV_SERVER_URL) {

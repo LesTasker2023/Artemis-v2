@@ -62,10 +62,12 @@ const V1AmmoData = z.object({
 
 const V1EquipmentItem = z.object({
   Id: z.number(),
-  ItemId: z.number(),
+  ItemId: z.number().optional(), // Optional - armor sets don't have ItemId
   Name: z.string(),
   Properties: V1PropertiesData.nullable().optional(),
   Ammo: V1AmmoData.optional(),
+  Armors: z.any().optional(), // For armor sets
+  EffectsOnSetEquip: z.any().optional(), // For armor sets
 });
 
 export type V1EquipmentItem = z.infer<typeof V1EquipmentItem>;

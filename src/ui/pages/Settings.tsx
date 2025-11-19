@@ -11,7 +11,6 @@ import { Save, Radio } from "lucide-solid";
 export default function Settings() {
   const [currentUser, setCurrentUser] = createSignal<any>(null);
   const [username, setUsername] = createSignal("");
-  const [webhookUrl, setWebhookUrl] = createSignal("");
   const [shareGPS, setShareGPS] = createSignal(false);
   const [visibility, setVisibility] = createSignal<
     "public" | "friends" | "off"
@@ -25,7 +24,6 @@ export default function Settings() {
         const user = await window.electron.user.getCurrent();
         setCurrentUser(user);
         setUsername(user.username);
-        setWebhookUrl(user.discordWebhookUrl || "");
         setShareGPS(user.shareGPS);
         setVisibility(user.gpsVisibility);
       } catch (error) {
@@ -43,7 +41,6 @@ export default function Settings() {
       const updatedUser = {
         ...user,
         username: username(),
-        discordWebhookUrl: webhookUrl() || null,
         shareGPS: shareGPS(),
         gpsVisibility: visibility(),
         updatedAt: Date.now(),
@@ -74,9 +71,6 @@ export default function Settings() {
         <Card>
           <div class="p-6">
             <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-              <div class="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                <span class="text-primary text-sm">👤</span>
-              </div>
               User Profile
             </h2>
 
@@ -126,23 +120,6 @@ export default function Settings() {
             </h2>
 
             <div class="space-y-6">
-              {/* Discord Webhook */}
-              <div>
-                <label class="block text-sm font-medium text-primary/80 mb-2">
-                  Discord Webhook URL
-                </label>
-                <input
-                  type="text"
-                  value={webhookUrl()}
-                  onInput={(e) => setWebhookUrl(e.currentTarget.value)}
-                  placeholder="https://discord.com/api/webhooks/..."
-                  class="w-full px-4 py-2 bg-background-lighter border border-primary/20 rounded-lg text-white placeholder-primary/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-mono text-sm"
-                />
-                <p class="text-xs text-primary/40 mt-1">
-                  Create a webhook in your Discord server's channel settings
-                </p>
-              </div>
-
               {/* Enable GPS Sharing */}
               <div>
                 <label class="flex items-center gap-3 p-3 bg-background-lighter rounded-lg cursor-pointer hover:bg-background-lighter/70 transition-colors">
