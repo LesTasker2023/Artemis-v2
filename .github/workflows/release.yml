@@ -22,6 +22,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Build Electron main and preload
+        run: node build-electron.js
+      
       - name: Build Electron app
         run: npm run build:electron
         env:
