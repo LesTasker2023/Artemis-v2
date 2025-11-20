@@ -67,7 +67,7 @@ linux:
 publish:
   provider: github
   owner: LesTasker2023
-  repo: ARTEMIS
+  repo: Artemis-v2
   releaseType: release
   publishAutoUpdate: true
 

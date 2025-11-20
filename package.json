@@ -7,7 +7,7 @@
     "author": "Les Tasker",
     "repository": {
         "type": "git",
-        "url": "https://github.com/LesTasker2023/ARTEMIS.git"
+        "url": "https://github.com/LesTasker2023/Artemis-v2.git"
     },
     "scripts": {
         "dev": "vite",
