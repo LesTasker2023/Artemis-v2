@@ -1,10 +1,12 @@
 import { HashRouter, Route } from "@solidjs/router";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./pages/Dashboard";
+import { Sessions } from "./pages/Sessions";
 import { SessionDetail } from "./pages/SessionDetail";
 import { GPS } from "./pages/GPS";
 import ActiveSession from "./pages/ActiveSession";
 import Loadouts from "./pages/Loadouts";
+import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import { HUDOverlay } from "./pages/HUDOverlay";
 import { Show, onMount, onCleanup } from "solid-js";
@@ -59,10 +61,12 @@ export default function App() {
       {/* Main app routes with layout */}
       <HashRouter root={Layout}>
         <Route path="/" component={Dashboard} />
+        <Route path="/sessions" component={Sessions} />
         <Route path="/session/:id" component={SessionDetail} />
         <Route path="/gps" component={GPS} />
         <Route path="/active" component={ActiveSession} />
         <Route path="/loadouts" component={Loadouts} />
+        <Route path="/analytics" component={Analytics} />
         <Route path="/settings" component={Settings} />
       </HashRouter>
     </Show>

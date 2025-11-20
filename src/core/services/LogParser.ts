@@ -208,6 +208,11 @@ export class LogParser {
       const quantity = parseInt(lootMatch[2]);
       const value = parseFloat(lootMatch[3]);
       
+      // Skip Universal Ammo messages (these are given by the game, not real loot)
+      if (itemName.toLowerCase().includes('universal ammo')) {
+        return result; // Return without creating event
+      }
+      
       result.event = {
         id: randomUUID(),
         timestamp: result.timestamp,

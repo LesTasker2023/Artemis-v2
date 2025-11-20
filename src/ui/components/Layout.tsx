@@ -12,6 +12,7 @@ import {
   Sword,
   BarChart3,
   Settings as SettingsIcon,
+  History,
 } from "lucide-solid";
 
 interface LayoutProps {
@@ -20,6 +21,7 @@ interface LayoutProps {
 
 const navItems = [
   { path: "/", label: "Dashboard", icon: Home },
+  { path: "/sessions", label: "Sessions", icon: History },
   { path: "/active", label: "Active Session", icon: Target },
   { path: "/gps", label: "GPS", icon: Map },
   { path: "/loadouts", label: "Loadouts", icon: Sword },

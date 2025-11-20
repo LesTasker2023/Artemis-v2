@@ -6,7 +6,6 @@ import {
   Target,
   DollarSign,
   Plus,
-  Download,
   MapPin,
   Skull,
   Trash2,
@@ -17,12 +16,10 @@ import { GPSService } from "../../core/services/GPSService";
 import { Button } from "../components/atoms/Button";
 import { Card } from "../components/atoms/Card";
 import { StatCard } from "../components/molecules/StatCard";
-import { SessionList } from "./SessionList";
 
 export function Dashboard() {
   const navigate = useNavigate();
   const [sessions, setSessions] = createSignal<Session[]>([]);
-  const [importing, setImporting] = createSignal(false);
 
   // Load sessions from database on mount
   onMount(async () => {
@@ -226,7 +223,6 @@ export function Dashboard() {
       return;
     }
 
-    setImporting(true);
     try {
       // Delete all sessions individually
       if (window.electron?.session) {
@@ -246,8 +242,6 @@ export function Dashboard() {
       console.log("[Dashboard] ✅ Cleared all sessions and in-memory state");
     } catch (error) {
       console.error("Failed to clear sessions:", error);
-    } finally {
-      setImporting(false);
     }
   };
 
@@ -295,14 +289,33 @@ export function Dashboard() {
   // Mob statistics
   const mobKills = createMemo(() => {
     const mobCounts: Record<string, number> = {};
+    let totalMobEvents = 0;
+    let unknownCount = 0;
+
     sessions().forEach((session) => {
       session.events
         .filter((e) => e.type === "MOB_KILLED")
         .forEach((e) => {
+          totalMobEvents++;
           const mobName = e.payload.mobName;
-          mobCounts[mobName] = (mobCounts[mobName] || 0) + 1;
+          console.log("[Dashboard] MOB_KILLED event:", mobName, e.payload);
+
+          // Skip "Unknown Creature" entries
+          if (mobName && mobName !== "Unknown Creature") {
+            mobCounts[mobName] = (mobCounts[mobName] || 0) + 1;
+          } else {
+            unknownCount++;
+          }
         });
     });
+
+    console.log("[Dashboard] Mob Stats:", {
+      totalEvents: totalMobEvents,
+      unknownCount,
+      identifiedMobs: Object.keys(mobCounts).length,
+      mobCounts,
+    });
+
     return Object.entries(mobCounts)
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
@@ -401,7 +414,7 @@ export function Dashboard() {
               icon={Trash2}
               onClick={clearAllSessions}
               variant="secondary"
-              disabled={importing() || sessions().length === 0}
+              disabled={sessions().length === 0}
             >
               Clear All
             </Button>
@@ -751,13 +764,33 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* Session List */}
-        <div>
-          <h2 class="text-2xl font-semibold mb-4">Recent Sessions</h2>
-          <SessionList
-            sessions={sessions()}
-            onSelectSession={(session) => navigate(`/session/${session.id}`)}
-          />
+        {/* Quick Actions */}
+        <div class="mb-8">
+          <h2 class="text-2xl font-semibold mb-4">Quick Actions</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button
+              onClick={() => navigate("/sessions")}
+              variant="outline"
+              class="flex items-center justify-center gap-2 py-6"
+            >
+              View All Sessions →
+            </Button>
+            <Button
+              onClick={() => navigate("/active")}
+              class="flex items-center justify-center gap-2 py-6"
+            >
+              <Plus size={20} />
+              Start New Session
+            </Button>
+            <Button
+              onClick={() => navigate("/gps")}
+              variant="outline"
+              class="flex items-center justify-center gap-2 py-6"
+            >
+              <MapPin size={20} />
+              GPS Analytics
+            </Button>
+          </div>
         </div>
       </div>
     </div>

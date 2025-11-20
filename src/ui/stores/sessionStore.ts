@@ -232,12 +232,28 @@ export async function initSessionStore() {
                       // NEW: Spawn-first identification
                       if (gpsLocation.lon !== undefined && gpsLocation.lat !== undefined) {
                         const validGps = { lon: gpsLocation.lon, lat: gpsLocation.lat };
+                        const eventIndex = i; // Capture current index
+                        
                         window.electron?.entropiaDB.identifyMobBySpawn(validGps, analysis.estimatedHealth).then(result => {
                           const lootSummary = lootItems.length > 0 ? lootItems.join(', ') : 'No loot';
                           const lootValueStr = totalLootValue > 0 ? ` (${totalLootValue.toFixed(2)} PED)` : '';
                           
                           if (result.success && result.data) {
                             const identification = result.data;
+                            
+                            // UPDATE: Set the mob name in the event
+                            updatedEvents[eventIndex].payload.mobName = identification.mobName;
+                            updatedEvents[eventIndex].payload.mobId = identification.mobId;
+                            
+                            // Save updated events back to session
+                            setCurrentSession(prev => {
+                              if (!prev) return prev;
+                              return {
+                                ...prev,
+                                events: [...updatedEvents]
+                              };
+                            });
+                            
                             // Log identified mob with distance
                             console.log(
                               `[ARTEMIS] 💀 ${identification.mobName} (${identification.distance.toFixed(0)}m from spawn) at (${validGps.lon}, ${validGps.lat}) ` +
