@@ -70,6 +70,7 @@ publish:
   repo: Artemis-v2
   releaseType: release
   publishAutoUpdate: true
+  channel: alpha
 
 # Build Settings
 compression: maximum

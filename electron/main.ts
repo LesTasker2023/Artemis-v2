@@ -9,6 +9,9 @@ import { registerEntropiaDBHandlers } from '../src/infra/ipc/entropia-db-handler
 // Configure auto-updater
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
+autoUpdater.channel = 'alpha'; // Use alpha channel for alpha releases
+autoUpdater.allowPrerelease = true; // Enable prerelease updates
+autoUpdater.allowDowngrade = false; // Prevent downgrading
 
 // Electron app lifecycle
 let mainWindow: typeof BrowserWindow | null = null;
