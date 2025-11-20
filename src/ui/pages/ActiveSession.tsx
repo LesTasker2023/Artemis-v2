@@ -234,21 +234,52 @@ export default function ActiveSession() {
 
     // Auto-detect and start watching log
     try {
-      // Detect log path
-      const detectResult = await window.electron.logWatcher.detectPath();
-      if (!detectResult.success || !detectResult.path) {
-        const errorMsg =
-          "Could not auto-detect chat.log. Make sure Entropia Universe is installed.";
-        setWatcherError(errorMsg);
-        alert(errorMsg);
-        return;
+      let chatLogPath: string | null = null;
+      
+      // First, try to use saved path from settings
+      const user = currentUser();
+      if (user?.settings?.chatLogPath) {
+        console.log(`[ActiveSession] 📁 Using saved path from settings: ${user.settings.chatLogPath}`);
+        chatLogPath = user.settings.chatLogPath;
+      } else {
+        // No saved path - try auto-detect
+        const detectResult = await window.electron.logWatcher.detectPath();
+        if (detectResult.success && detectResult.path) {
+          console.log(`[ActiveSession] ✅ Auto-detected: ${detectResult.path}`);
+          chatLogPath = detectResult.path;
+        }
+      }
+      
+      // If still no path, prompt user to browse
+      if (!chatLogPath) {
+        console.warn(
+          "[ActiveSession] ⚠️ No path found, prompting user to browse..."
+        );
+
+        const browseResult = await window.electron.logWatcher.browsePath();
+        if (!browseResult.success || !browseResult.path) {
+          const errorMsg =
+            "Could not find chat.log. Please set it in Settings:\n" +
+            "1. Go to Settings page\n" +
+            "2. Set your chat.log path under 'Chat Log Path'\n" +
+            "3. Common locations:\n" +
+            "   • Documents\\Entropia Universe\\chat.log\n" +
+            "   • C:\\Program Files (x86)\\Steam\\steamapps\\common\\Entropia Universe\\chat.log";
+          setWatcherError(errorMsg);
+          alert(errorMsg);
+          return;
+        }
+
+        chatLogPath = browseResult.path;
+        console.log(`[ActiveSession] ✅ User selected: ${chatLogPath}`);
       }
 
-      // Start watching (event listeners already registered globally in sessionStore)
+      // Start watching with the determined path
       console.log(
         `[ActiveSession] 🚀 Starting log watcher for session: ${newSession.id}`
       );
       const startResult = await window.electron.logWatcher.start({
+        logPath: chatLogPath,
         sessionId: newSession.id,
         userId: "demo-user",
       });
@@ -257,7 +288,6 @@ export default function ActiveSession() {
       setWatcherError("");
 
       // Start Live GPS broadcasting if enabled and user has shareGPS on
-      const user = currentUser();
       if (user?.shareGPS && liveGPS) {
         liveGPS.startBroadcasting(user.id, user.username);
       }

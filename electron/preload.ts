@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electron', {
   // App info
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   getUserDataPath: () => ipcRenderer.invoke('get-user-data-path'),
+  openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
 
   // Session database operations
   session: {
@@ -30,6 +31,7 @@ contextBridge.exposeInMainWorld('electron', {
   // Log watcher operations
   logWatcher: {
     detectPath: () => ipcRenderer.invoke('logwatcher:detectPath'),
+    browsePath: () => ipcRenderer.invoke('logwatcher:browsePath'),
     start: (config: { logPath?: string; sessionId: string; userId: string }) =>
       ipcRenderer.invoke('logwatcher:start', config),
     stop: () => ipcRenderer.invoke('logwatcher:stop'),

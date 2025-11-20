@@ -22,6 +22,9 @@ export const User = z.object({
     shareGPS: z.boolean().default(false),
     gpsVisibility: z.enum(['public', 'friends', 'off']).default('off'),
     
+    // Chat log path (for auto-detection)
+    chatLogPath: z.string().optional(),
+    
     // Privacy
     showOnlineStatus: z.boolean().default(true),
     allowFriendRequests: z.boolean().default(true),

@@ -36,23 +36,67 @@ export class LogWatcher extends EventEmitter {
   
   /**
    * Auto-detect Entropia Universe chat.log location
+   * Checks multiple common installation paths including Steam, standalone, and custom locations
    */
   static detectLogPath(): string | null {
     const userHome = homedir();
+    const username = userHome.split('\\').pop() || '';
+    
+    // Common installation paths for Entropia Universe
     const possiblePaths = [
+      // Standard Documents folder (most common)
       join(userHome, 'Documents', 'Entropia Universe', 'chat.log'),
       join(userHome, 'My Documents', 'Entropia Universe', 'chat.log'),
-      join('C:', 'Users', userHome.split('\\').pop() || '', 'Documents', 'Entropia Universe', 'chat.log'),
+      
+      // OneDrive Documents (Windows 10/11)
+      join(userHome, 'OneDrive', 'Documents', 'Entropia Universe', 'chat.log'),
+      join(userHome, 'OneDrive', 'Dokumenter', 'Entropia Universe', 'chat.log'), // Norwegian
+      join(userHome, 'OneDrive', 'Dokumente', 'Entropia Universe', 'chat.log'), // German
+      join(userHome, 'OneDrive', 'Documentos', 'Entropia Universe', 'chat.log'), // Spanish/Portuguese
+      
+      // Alternative Windows user paths
+      join('C:', 'Users', username, 'Documents', 'Entropia Universe', 'chat.log'),
+      join('C:', 'Users', username, 'My Documents', 'Entropia Universe', 'chat.log'),
+      
+      // Steam installation paths
+      join('C:', 'Program Files (x86)', 'Steam', 'steamapps', 'common', 'Entropia Universe', 'chat.log'),
+      join('C:', 'Program Files', 'Steam', 'steamapps', 'common', 'Entropia Universe', 'chat.log'),
+      join('D:', 'Steam', 'steamapps', 'common', 'Entropia Universe', 'chat.log'),
+      join('D:', 'SteamLibrary', 'steamapps', 'common', 'Entropia Universe', 'chat.log'),
+      join('E:', 'Steam', 'steamapps', 'common', 'Entropia Universe', 'chat.log'),
+      join('E:', 'SteamLibrary', 'steamapps', 'common', 'Entropia Universe', 'chat.log'),
+      
+      // Standalone installation paths
+      join('C:', 'Program Files (x86)', 'Entropia Universe', 'chat.log'),
+      join('C:', 'Program Files', 'Entropia Universe', 'chat.log'),
+      join('C:', 'Games', 'Entropia Universe', 'chat.log'),
+      join('D:', 'Games', 'Entropia Universe', 'chat.log'),
+      join('E:', 'Games', 'Entropia Universe', 'chat.log'),
+      
+      // Custom user install locations
+      join(userHome, 'Games', 'Entropia Universe', 'chat.log'),
+      join('D:', 'Entropia Universe', 'chat.log'),
+      join('E:', 'Entropia Universe', 'chat.log'),
     ];
     
+    console.log(`🔍 Searching for chat.log in ${possiblePaths.length} possible locations...`);
+    
     for (const path of possiblePaths) {
-      if (existsSync(path)) {
-        console.log(`✅ Found chat.log at: ${path}`);
-        return path;
+      try {
+        if (existsSync(path)) {
+          console.log(`✅ Found chat.log at: ${path}`);
+          return path;
+        }
+      } catch (err) {
+        // Ignore permission errors and continue searching
+        continue;
       }
     }
     
     console.warn('⚠️ Could not auto-detect chat.log location');
+    console.warn('💡 Checked paths:');
+    possiblePaths.slice(0, 10).forEach(p => console.warn(`   - ${p}`));
+    console.warn('   ... and more');
     return null;
   }
 

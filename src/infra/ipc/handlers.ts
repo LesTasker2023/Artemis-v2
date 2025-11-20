@@ -3,7 +3,7 @@
  * Exposes database operations to renderer process
  */
 
-import { ipcMain, BrowserWindow, app } from 'electron';
+import { ipcMain, BrowserWindow, app, shell } from 'electron';
 import { initializeDatabase } from '../db/connection';
 import { SessionRepository } from '../storage/SessionRepository';
 import { LoadoutRepository } from '../storage/LoadoutRepository';
@@ -108,6 +108,17 @@ export function registerIpcHandlers(): void {
 
   // ==================== User Operations ====================
 
+  // Open external URL in default browser
+  ipcMain.handle('shell:openExternal', async (_event, url: string) => {
+    try {
+      await shell.openExternal(url);
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to open external URL:', error);
+      return { success: false, error: String(error) };
+    }
+  });
+
   // Get current user
   ipcMain.handle('user:getCurrent', async () => {
     try {
@@ -157,6 +168,33 @@ export function registerIpcHandlers(): void {
       return { success: true, path };
     } catch (error) {
       console.error('Failed to detect log path:', error);
+      return { success: false, error: String(error) };
+    }
+  });
+
+  // Browse for chat.log file manually
+  ipcMain.handle('logwatcher:browsePath', async () => {
+    try {
+      const { dialog } = require('electron');
+      const result = await dialog.showOpenDialog({
+        title: 'Select Entropia Universe chat.log',
+        defaultPath: path.join(require('os').homedir(), 'Documents', 'Entropia Universe'),
+        filters: [
+          { name: 'Chat Log', extensions: ['log'] },
+          { name: 'All Files', extensions: ['*'] }
+        ],
+        properties: ['openFile']
+      });
+
+      if (result.canceled || result.filePaths.length === 0) {
+        return { success: false, path: null };
+      }
+
+      const selectedPath = result.filePaths[0];
+      console.log(`✅ User selected chat.log: ${selectedPath}`);
+      return { success: true, path: selectedPath };
+    } catch (error) {
+      console.error('Failed to browse for log path:', error);
       return { success: false, error: String(error) };
     }
   });
