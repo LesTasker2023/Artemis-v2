@@ -70,15 +70,7 @@ export default function ActiveSession() {
     return session.events[session.events.length - 1]?.type || "";
   };
 
-  // Debug: Track when signal changes
-  createEffect(() => {
-    const session = activeSession();
-    console.log("[ActiveSession] 🔄 EFFECT: activeSession changed:", {
-      events: session?.events.length,
-      shots: session?.stats.totalShots,
-      tracking: isTracking(),
-    });
-  });
+  // Monitor session changes (silent unless error)
 
   // Register event listeners once on mount to avoid duplicates
   onMount(async () => {

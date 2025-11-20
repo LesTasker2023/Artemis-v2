@@ -4,6 +4,7 @@ const { autoUpdater } = require('electron-updater');
 
 // IPC handlers will be bundled by esbuild
 import { registerIpcHandlers } from '../src/infra/ipc/handlers';
+import { registerEntropiaDBHandlers } from '../src/infra/ipc/entropia-db-handlers';
 
 // Configure auto-updater
 autoUpdater.autoDownload = true;
@@ -179,6 +180,7 @@ autoUpdater.on('update-downloaded', (info) => {
 // App lifecycle events
 app.whenReady().then(() => {
   registerIpcHandlers();
+  registerEntropiaDBHandlers(); // Register entropia database handlers
   createSplashScreen(); // Show splash first
   
   // Wait a moment then create main window

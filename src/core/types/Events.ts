@@ -69,6 +69,7 @@ export const MobKilledEvent = BaseEvent.extend({
     mobName: z.string(),
     mobId: z.string(),
     mobMaturity: z.string().optional(),
+    mobSpecies: z.string().optional(),
     location: z.object({
       lon: z.number(),
       lat: z.number(),

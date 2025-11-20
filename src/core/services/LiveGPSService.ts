@@ -107,13 +107,10 @@ export class LiveGPSService {
     }
 
     try {
-      console.log(`[LiveGPS] 📍 Broadcasting location: ${update.location.lon}, ${update.location.lat}`);
-      
       // Send to Discord webhook (no retries - they cause duplicates)
       await this.sendToDiscord(update);
-      console.log('[LiveGPS] ✅ Broadcast successful');
     } catch (error) {
-      console.error('[LiveGPS] ❌ Failed to broadcast location:', error);
+      console.error('[ARTEMIS] ❌ Failed to broadcast location:', error);
       // Don't retry - user can manually retry if needed
     }
   }

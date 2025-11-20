@@ -468,7 +468,7 @@ export class LogParser {
     let currentLootBatch: SessionEvent[] = [];
     let lastEventTimestamp = 0;
     const LOOT_BATCH_TIMEOUT = 2000; // 2 seconds - if loot events are more than 2s apart, they're from different kills
-    const GPS_TAG_WINDOW = 5000; // 5 seconds - GPS ping after kill to tag location
+    const GPS_TAG_WINDOW = 120000; // 2 minutes - GPS ping after kill to tag location (users may press location button with delay)
 
     for (const result of results) {
       if (!result.event) continue;
@@ -484,7 +484,7 @@ export class LogParser {
             const prevEvent = events[i];
             if (prevEvent.type === 'MOB_KILLED') {
               const timeDiff = event.timestamp - prevEvent.timestamp;
-              // If the GPS ping is within 5 seconds after the kill, tag it
+              // If the GPS ping is within 2 minutes after the kill, tag it
               if (timeDiff >= 0 && timeDiff <= GPS_TAG_WINDOW) {
                 // Update the kill location with the GPS ping
                 prevEvent.payload.location = { lon: loc.lon, lat: loc.lat };

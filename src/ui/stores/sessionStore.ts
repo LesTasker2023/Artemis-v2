@@ -10,7 +10,11 @@ import type { SessionEvent } from "../../core/types/Events";
 import type { LiveGPSUpdate } from "../../core/types/User";
 import { SessionService } from "../../core/services/SessionService";
 import { LiveGPSService } from "../../core/services/LiveGPSService";
+import { MobIdentificationServiceV2 } from "../../core/services/MobIdentificationServiceV2";
 import { settings } from "./settingsStore";
+
+// Initialize database-backed mob identification service
+const mobIdService = new MobIdentificationServiceV2();
 
 // Global signals for active session
 const [activeSession, setActiveSession] = createSignal<Session | null>(null);
@@ -32,6 +36,9 @@ let liveGPS: LiveGPSService | null = null;
 
 // Track pending kill broadcasts (waiting for GPS_UPDATE)
 const pendingKillBroadcasts = new Map<string, SessionEvent>(); // mobId -> kill event
+
+// Track last kill timestamp to detect first shot of new combat
+let lastKillTimestamp: number | null = null;
 
 /**
  * Initialize the global session store
@@ -86,42 +93,53 @@ export async function initSessionStore() {
     console.log("[SessionStore] 🔍 onEvents function:", typeof window.electron.logWatcher.onEvents);
     
     window.electron.logWatcher.onEvents((events: SessionEvent[]) => {
-      console.log(`[SessionStore] 📥 ✨✨✨ CALLBACK FIRED! Received ${events.length} events`);
-      console.log(`[SessionStore] 📋 Events:`, events);
-      console.log(`[SessionStore] 🔍 Event types:`, events.map(e => e.type).join(', '));
+      // Handle HIT_REGISTERED events - trigger GPS on first shot after kill
+      const hitEvents = events.filter(e => e.type === 'HIT_REGISTERED');
+      
+      for (const hitEvent of hitEvents) {
+        // If this is the first shot after a kill (within reasonable time window)
+        if (lastKillTimestamp !== null) {
+          const timeSinceKill = hitEvent.timestamp - lastKillTimestamp;
+          
+          // If shot within 30 seconds of kill, it's likely first shot of new combat
+          if (timeSinceKill > 0 && timeSinceKill < 30000) {
+            console.log(`[SessionStore] 🎯 First shot after kill detected (${(timeSinceKill / 1000).toFixed(1)}s) - triggering GPS`);
+            
+            // Trigger GPS keypress to get location early
+            if (window.electron?.keyboard) {
+              window.electron.keyboard.sendKeys(',').catch(err => {
+                console.error(`[ARTEMIS] ❌ GPS keypress failed:`, err);
+              });
+            }
+            
+            // Reset so we don't trigger again until next kill
+            lastKillTimestamp = null;
+          }
+        }
+      }
       
       // Handle MOB_KILLED events
       const killEvents = events.filter(e => e.type === 'MOB_KILLED');
-      console.log(`[SessionStore] 💀 Found ${killEvents.length} MOB_KILLED events`);
       
       for (const killEvent of killEvents) {
-        console.log(`[SessionStore] 💀 Mob kill detected:`, killEvent.payload.mobName);
+        // Track this kill timestamp for detecting first shot of next combat
+        lastKillTimestamp = killEvent.timestamp;
         
         // Always trigger in-game location ping (for GPS_UPDATE event)
         if (window.electron?.keyboard) {
-          window.electron.keyboard.sendKeys(',').then(result => {
-            if (result.success) {
-              console.log(`[SessionStore] ✅ Location keypress sent successfully`);
-            } else {
-              console.error(`[SessionStore] ❌ Failed to send keypress:`, result.error);
-            }
-          }).catch(err => {
-            console.error(`[SessionStore] ❌ Keypress error:`, err);
+          window.electron.keyboard.sendKeys(',').catch(err => {
+            console.error(`[ARTEMIS] ❌ GPS keypress failed:`, err);
           });
         }
         
         // If GPS is enabled, queue kill for Discord broadcast (wait for GPS_UPDATE)
         const userSettings = settings();
         if (userSettings.liveGPS.enabled && userSettings.liveGPS.discordWebhookUrl) {
-          console.log(`[SessionStore] 📡 GPS enabled - queuing kill for broadcast after GPS_UPDATE`);
-          // Use kill event ID as key to match with upcoming GPS_UPDATE
           pendingKillBroadcasts.set(killEvent.id, killEvent);
           
           // Safety timeout: broadcast anyway after 3 seconds if no GPS_UPDATE received
-          // (Accounts for: keypress delay ~400ms + game processing + chat.log write + log watcher read)
           setTimeout(() => {
             if (pendingKillBroadcasts.has(killEvent.id)) {
-              console.log(`[SessionStore] ⏱️ Timeout (3s) - broadcasting kill without waiting for GPS_UPDATE`);
               pendingKillBroadcasts.delete(killEvent.id);
               broadcastKillToDiscord(killEvent);
             }
@@ -131,16 +149,12 @@ export async function initSessionStore() {
       
       // Handle GPS_UPDATE events - check for pending kill broadcasts
       const gpsEvents = events.filter(e => e.type === 'GPS_UPDATE');
-      console.log(`[SessionStore] 📍 Found ${gpsEvents.length} GPS_UPDATE events`);
       
       if (gpsEvents.length > 0 && pendingKillBroadcasts.size > 0) {
-        // We have a GPS update and pending kills - broadcast them now with fresh location
-        const latestGPS = gpsEvents[gpsEvents.length - 1]; // Use most recent GPS event
-        console.log(`[SessionStore] 📍 GPS_UPDATE received - broadcasting ${pendingKillBroadcasts.size} pending kills`);
+        const latestGPS = gpsEvents[gpsEvents.length - 1];
         
         for (const [killId, killEvent] of pendingKillBroadcasts.entries()) {
           if (killEvent.type === 'MOB_KILLED') {
-            console.log(`[SessionStore] 📤 Broadcasting kill with fresh GPS:`, killEvent.payload.mobName);
             broadcastKillToDiscordWithGPS(killEvent, latestGPS);
           }
           pendingKillBroadcasts.delete(killId);
@@ -155,13 +169,146 @@ export async function initSessionStore() {
 
         // Update session with new events
         const loadout = activeLoadout();
-        const updated = SessionService.addEvents(prev, events, loadout);
+        let updated = SessionService.addEvents(prev, events, loadout);
         
-        console.log(
-          `[SessionStore] 📊 Session updated: ${updated.events.length} events, ` +
-          `${updated.stats.totalShots} shots, ${updated.stats.totalKills} kills, ` +
-          `${updated.stats.profit.toFixed(2)} PED`
-        );
+        // Retroactively tag kill locations with GPS coordinates
+        // This ensures kills show on map even if added before GPS_UPDATE
+        if (gpsEvents.length > 0) {
+          const latestGPS = gpsEvents[gpsEvents.length - 1];
+          if (latestGPS.type === 'GPS_UPDATE') {
+            const gpsLocation = latestGPS.payload.location;
+            const updatedEvents = [...updated.events];
+            const GPS_TAG_WINDOW = 120000; // 2 minutes
+            let hasTaggedKills = false;
+            
+            // Look back through recent events (last 30) to find MOB_KILLED with (0,0)
+            for (let i = updatedEvents.length - 1; i >= Math.max(0, updatedEvents.length - 30); i--) {
+              const event = updatedEvents[i];
+              if (event.type === 'MOB_KILLED') {
+                const timeDiff = latestGPS.timestamp - event.timestamp;
+                // Tag if within 2 min AND has no valid location
+                if (timeDiff >= 0 && timeDiff <= GPS_TAG_WINDOW &&
+                    (event.payload.location.lon === 0 || event.payload.location.lat === 0)) {
+                  
+                  // Update location
+                  updatedEvents[i] = {
+                    ...event,
+                    payload: {
+                      ...event.payload,
+                      location: { lon: gpsLocation.lon, lat: gpsLocation.lat },
+                    },
+                  };
+                  
+                  // Attempt to identify mob based on combat data
+                  if (event.payload.mobName === 'Unknown Creature') {
+                    try {
+                      // Find previous kill to establish combat window
+                      let previousKill: SessionEvent | undefined;
+                      for (let j = i - 1; j >= 0; j--) {
+                        if (updatedEvents[j].type === 'MOB_KILLED') {
+                          previousKill = updatedEvents[j];
+                          break;
+                        }
+                      }
+                      
+                      // Analyze combat data
+                      const analysis = mobIdService.analyzeKill(
+                        updatedEvents,
+                        updatedEvents[i],
+                        previousKill
+                      );
+                      
+                      // Extract loot items and total value from nearby LOOT_RECEIVED events
+                      const lootItems: string[] = [];
+                      let totalLootValue = 0;
+                      for (let k = i + 1; k < Math.min(updatedEvents.length, i + 10); k++) {
+                        const e = updatedEvents[k];
+                        if (e.type === 'LOOT_RECEIVED') {
+                          lootItems.push(...e.payload.items.map(item => item.name));
+                          totalLootValue += e.payload.totalTTValue || 0;
+                        }
+                      }
+                      
+                      // NEW: Spawn-first identification
+                      if (gpsLocation.lon !== undefined && gpsLocation.lat !== undefined) {
+                        const validGps = { lon: gpsLocation.lon, lat: gpsLocation.lat };
+                        window.electron?.entropiaDB.identifyMobBySpawn(validGps, analysis.estimatedHealth).then(result => {
+                          const lootSummary = lootItems.length > 0 ? lootItems.join(', ') : 'No loot';
+                          const lootValueStr = totalLootValue > 0 ? ` (${totalLootValue.toFixed(2)} PED)` : '';
+                          
+                          if (result.success && result.data) {
+                            const identification = result.data;
+                            // Log identified mob with distance
+                            console.log(
+                              `[ARTEMIS] 💀 ${identification.mobName} (${identification.distance.toFixed(0)}m from spawn) at (${validGps.lon}, ${validGps.lat}) ` +
+                              `| ${analysis.estimatedHealth.toFixed(0)} HP | ${analysis.totalShots} shots | ` +
+                              `${(analysis.accuracy * 100).toFixed(0)}% accuracy | Loot: ${lootSummary}${lootValueStr}`
+                          );
+                          } else {
+                            // Log unknown - no nearby spawns
+                            console.log(
+                              `[ARTEMIS] 💀 Unknown Creature at (${validGps.lon}, ${validGps.lat}) ` +
+                              `| ${analysis.estimatedHealth.toFixed(0)} HP | ${analysis.totalShots} shots | ` +
+                              `${(analysis.accuracy * 100).toFixed(0)}% accuracy | Loot: ${lootSummary}${lootValueStr}`
+                            );
+                          }
+                        }).catch(error => {
+                          console.error('[ARTEMIS] ❌ Mob identification failed:', error);
+                          const lootSummary = lootItems.length > 0 ? lootItems.join(', ') : 'No loot';
+                          const lootValueStr = totalLootValue > 0 ? ` (${totalLootValue.toFixed(2)} PED)` : '';
+                          console.log(
+                            `[ARTEMIS] 💀 Unknown Creature at (${validGps.lon}, ${validGps.lat}) | Loot: ${lootSummary}${lootValueStr}`
+                          );
+                        });
+                      } else {
+                        // No GPS location available
+                        const lootSummary = lootItems.length > 0 ? lootItems.join(', ') : 'No loot';
+                        const lootValueStr = totalLootValue > 0 ? ` (${totalLootValue.toFixed(2)} PED)` : '';
+                        console.log(
+                          `[ARTEMIS] 💀 Unknown Creature (no GPS) | ${analysis.estimatedHealth.toFixed(0)} HP | Loot: ${lootSummary}${lootValueStr}`
+                        );
+                      }
+                      
+                      // For now, just log basic info immediately
+                      const lootSummary = lootItems.length > 0 ? lootItems.join(', ') : 'No loot';
+                      console.log(
+                        `[ARTEMIS] 🎯 Kill detected at (${gpsLocation.lon}, ${gpsLocation.lat}) | ${analysis.estimatedHealth.toFixed(0)} HP`
+                      );
+                    } catch (error) {
+                      console.error('[ARTEMIS] ❌ Combat analysis failed:', error);
+                      // Fallback: log basic kill info
+                      console.log(
+                        `[ARTEMIS] 💀 Kill at (${gpsLocation.lon}, ${gpsLocation.lat})`
+                      );
+                    }
+                  } else {
+                    // Mob already identified (not Unknown Creature)
+                    const lootItems: string[] = [];
+                    for (let k = i + 1; k < Math.min(updatedEvents.length, i + 10); k++) {
+                      const e = updatedEvents[k];
+                      if (e.type === 'LOOT_RECEIVED') {
+                        lootItems.push(...e.payload.items.map(item => item.name));
+                      }
+                    }
+                    const lootSummary = lootItems.length > 0 ? lootItems.join(', ') : 'No loot';
+                    console.log(
+                      `[ARTEMIS] 💀 ${event.payload.mobName} killed at (${gpsLocation.lon}, ${gpsLocation.lat}) | Loot: ${lootSummary}`
+                    );
+                  }
+                  
+                  hasTaggedKills = true;
+                }
+              }
+            }
+            
+            // If we tagged kills, update the session
+            if (hasTaggedKills) {
+              updated = { ...updated, events: updatedEvents };
+            }
+          }
+        }
+        
+        // Silent update - kills already logged above
 
         // Send live update to HUD overlay
         window.electron?.hud.updateSession(updated, loadout);
@@ -194,11 +341,7 @@ export function startSession(session: Session, loadout: Loadout | null = null) {
   autoSaveTimer = setInterval(async () => {
     const currentSession = activeSession();
     if (currentSession && window.electron?.session) {
-      console.log(
-        `[SessionStore] 💾 Auto-saving session with ${currentSession.events.length} events, ${currentSession.stats.totalKills} kills, ${currentSession.stats.profit.toFixed(2)} PED`
-      );
       await window.electron.session.save(currentSession);
-      console.log(`[SessionStore] ✅ Auto-save complete`);
     }
   }, 5000);
   
@@ -387,16 +530,14 @@ async function broadcastKillToDiscordWithGPS(killEvent: SessionEvent, gpsEvent: 
       loadoutName: currentLoadout?.name,
       currentProfit: currentSession.stats.profit,
       killCount: currentSession.stats.totalKills,
-      lastKill: killEvent.payload.mobName, // Include the killed mob name
+      lastKill: killEvent.payload.mobName,
       timestamp: killEvent.timestamp,
       ttl: 300000,
     };
     
-    console.log(`[SessionStore] 📤 Broadcasting kill to Discord with fresh GPS:`, update);
     await liveGPS.broadcastLocation(update);
-    console.log(`[SessionStore] ✅ Kill broadcast successful!`);
   } catch (error) {
-    console.error('[SessionStore] ❌ Kill broadcast failed:', error);
+    console.error('[ARTEMIS] ❌ Discord broadcast failed:', error);
   }
 }
 
@@ -459,11 +600,9 @@ async function broadcastKillToDiscord(killEvent: SessionEvent) {
       ttl: 300000,
     };
     
-    console.log(`[SessionStore] 📤 Broadcasting kill to Discord (fallback location):`, update);
     await liveGPS.broadcastLocation(update);
-    console.log(`[SessionStore] ✅ Kill broadcast successful!`);
   } catch (error) {
-    console.error('[SessionStore] ❌ Kill broadcast failed:', error);
+    console.error('[ARTEMIS] ❌ Discord broadcast failed:', error);
   }
 }
 

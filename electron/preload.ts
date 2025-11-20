@@ -124,6 +124,21 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.on('hud:sessionUpdate', (_e, session, loadout) => callback(session, loadout));
     },
   },
+  
+  // Entropia Database operations
+  entropiaDB: {
+    init: () => ipcRenderer.invoke('entropia-db:init'),
+    identifyMob: (estimatedHealth: number, location: { lon: number; lat: number }, lootItems?: string[]) =>
+      ipcRenderer.invoke('entropia-db:identify-mob', estimatedHealth, location, lootItems),
+    identifyMobBySpawn: (location: { lon: number; lat: number }, estimatedHealth: number) =>
+      ipcRenderer.invoke('entropia-db:identify-by-spawn', location, estimatedHealth),
+    findByHealth: (estimatedHealth: number, tolerance?: number) =>
+      ipcRenderer.invoke('entropia-db:find-by-health', estimatedHealth, tolerance),
+    findByLocation: (location: { lon: number; lat: number }, radiusMeters?: number) =>
+      ipcRenderer.invoke('entropia-db:find-by-location', location, radiusMeters),
+    findByName: (name: string, maturity?: string) =>
+      ipcRenderer.invoke('entropia-db:find-by-name', name, maturity),
+  },
 
   // File system operations (to be added)
   // readFile: (path: string) => ipcRenderer.invoke('read-file', path),
@@ -220,5 +235,32 @@ export interface ElectronAPI {
     resize: (width: number, height: number, animate?: boolean) => Promise<{ success: boolean; error?: string }>;
     updateSession: (session: Session | null, loadout?: Loadout | null) => void;
     onSessionUpdate: (callback: (session: Session | null, loadout?: Loadout | null) => void) => void;
+  };
+  entropiaDB: {
+    init: () => Promise<{ success: boolean; error?: string }>;
+    identifyMob: (estimatedHealth: number, location: { lon: number; lat: number }, lootItems?: string[]) => Promise<{
+      success: boolean;
+      data?: {
+        id: number;
+        name: string;
+        maturity: string;
+        hp: number;
+        species: string;
+        distance: number;
+      };
+      error?: string;
+    }>;
+    identifyMobBySpawn: (location: { lon: number; lat: number }, estimatedHealth: number) => Promise<{
+      success: boolean;
+      data?: {
+        mobName: string;
+        distance: number;
+        confidence: 'high' | 'medium' | 'low';
+      } | null;
+      error?: string;
+    }>;
+    findByHealth: (estimatedHealth: number, tolerance?: number) => Promise<{ success: boolean; data?: any[]; error?: string }>;
+    findByLocation: (location: { lon: number; lat: number }, radiusMeters?: number) => Promise<{ success: boolean; data?: any[]; error?: string }>;
+    findByName: (name: string, maturity?: string) => Promise<{ success: boolean; data?: any; error?: string }>;
   };
 }
