@@ -1,8 +1,9 @@
-/**
- * README: artemis-v2
- * TypeScript rewrite of ARTEMIS with immutable architecture
- * Auto-update test: v2.0.0-alpha.10
- */
+/\*\*
+
+- README: artemis-v2
+- TypeScript rewrite of ARTEMIS with immutable architecture
+- Auto-update test: v2.0.0-alpha.10
+  \*/
 
 # ARTEMIS v2 - TypeScript Edition
 
@@ -27,20 +28,24 @@ npm run build
 ## Architecture
 
 ### Event Sourcing
+
 All data is stored as immutable events. State is derived by reducing over events.
 
 **Benefits:**
+
 - Time travel debugging
 - Undo/redo for free
 - Audit log built-in
 - Easy to add new features (just add new event types)
 
 ### Type Safety
+
 - Zod schemas validate at runtime
 - TypeScript provides compile-time safety
 - Zero `any` types allowed (strict mode)
 
 ### Immutability
+
 - All data structures are immutable
 - Immer for ergonomic updates
 - Structural sharing for performance

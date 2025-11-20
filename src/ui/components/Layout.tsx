@@ -88,7 +88,7 @@ export const Layout: Component<LayoutProps> = (props) => {
                 VERSION
               </div>
               <div class="text-sm text-primary font-mono text-center mt-1">
-                v2.0.0-alpha.1
+                v{import.meta.env.PACKAGE_VERSION || '2.0.0-alpha.10'}
               </div>
             </div>
           </div>

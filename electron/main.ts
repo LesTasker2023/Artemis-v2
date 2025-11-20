@@ -137,18 +137,25 @@ function createHUDWindow() {
 // Auto-update event listeners
 autoUpdater.on('checking-for-update', () => {
   console.log('🔍 Checking for updates...');
+  console.log('   Current version:', app.getVersion());
+  console.log('   Feed URL:', autoUpdater.getFeedURL());
 });
 
 autoUpdater.on('update-available', (info) => {
   console.log('📦 Update available:', info.version);
+  console.log('   Release date:', info.releaseDate);
+  console.log('   Download URL:', info.files?.[0]?.url);
 });
 
 autoUpdater.on('update-not-available', (info) => {
   console.log('✅ App is up to date:', info.version);
+  console.log('   Current version:', app.getVersion());
 });
 
 autoUpdater.on('error', (err) => {
   console.error('❌ Update error:', err);
+  console.error('   Message:', err.message);
+  console.error('   Stack:', err.stack);
 });
 
 autoUpdater.on('download-progress', (progress) => {

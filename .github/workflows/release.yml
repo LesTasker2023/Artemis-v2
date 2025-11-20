@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
 
 permissions:
   contents: write
@@ -15,12 +18,73 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
+      
+      - name: Check if version bump needed
+        id: check_version
+        run: |
+          # Check if this commit already has a version bump (to avoid loops)
+          $commitMsg = git log -1 --pretty=%B
+          if ($commitMsg -match '\[skip ci\]' -or $commitMsg -match 'chore: bump version') {
+            echo "skip=true" >> $env:GITHUB_OUTPUT
+            echo "Skipping - version already bumped"
+          } else {
+            echo "skip=false" >> $env:GITHUB_OUTPUT
+            echo "Proceeding with version bump"
+          }
+        shell: pwsh
+      
+      - name: Bump version
+        if: steps.check_version.outputs.skip == 'false'
+        id: bump_version
+        run: |
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          $version = $pkg.version
+          
+          # Parse version (e.g., "2.0.0-alpha.10")
+          if ($version -match '^(\d+\.\d+\.\d+)-alpha\.(\d+)$') {
+            $base = $matches[1]
+            $alpha = [int]$matches[2]
+            $newAlpha = $alpha + 1
+            $newVersion = "$base-alpha.$newAlpha"
+          } else {
+            Write-Error "Version format not recognized: $version"
+            exit 1
+          }
+          
+          # Update package.json
+          $pkg.version = $newVersion
+          $pkg | ConvertTo-Json -Depth 100 | Set-Content package.json -NoNewline
+          
+          echo "new_version=$newVersion" >> $env:GITHUB_OUTPUT
+          echo "Bumped version: $version -> $newVersion"
+        shell: pwsh
+      
+      - name: Commit version bump
+        if: steps.check_version.outputs.skip == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore: bump version to ${{ steps.bump_version.outputs.new_version }} [skip ci]"
+          git push
+        shell: pwsh
+      
+      - name: Get final version
+        id: final_version
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "Building version: $version"
+        shell: pwsh
       
       - name: Install dependencies
         run: npm ci
@@ -33,22 +97,24 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Get version from package.json
-        id: package-version
-        run: |
-          $version = (Get-Content package.json | ConvertFrom-Json).version
-          echo "version=$version" >> $env:GITHUB_OUTPUT
-      
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.package-version.outputs.version }}
-          name: Release v${{ steps.package-version.outputs.version }}
+          tag_name: v${{ steps.final_version.outputs.version }}
+          name: ARTEMIS v${{ steps.final_version.outputs.version }}
           draft: false
           prerelease: true
+          generate_release_notes: true
           files: |
             dist-release/*.exe
             dist-release/*.blockmap
             dist-release/latest.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Summary
+        run: |
+          echo "✅ Released ARTEMIS v${{ steps.final_version.outputs.version }}"
+          echo "📦 Installers uploaded to GitHub Releases"
+          echo "🔄 Auto-update enabled for all users"
+        shell: pwsh
