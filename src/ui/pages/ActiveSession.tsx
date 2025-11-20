@@ -235,11 +235,13 @@ export default function ActiveSession() {
     // Auto-detect and start watching log
     try {
       let chatLogPath: string | null = null;
-      
+
       // First, try to use saved path from settings
       const user = currentUser();
       if (user?.settings?.chatLogPath) {
-        console.log(`[ActiveSession] 📁 Using saved path from settings: ${user.settings.chatLogPath}`);
+        console.log(
+          `[ActiveSession] 📁 Using saved path from settings: ${user.settings.chatLogPath}`
+        );
         chatLogPath = user.settings.chatLogPath;
       } else {
         // No saved path - try auto-detect
@@ -249,7 +251,7 @@ export default function ActiveSession() {
           chatLogPath = detectResult.path;
         }
       }
-      
+
       // If still no path, prompt user to browse
       if (!chatLogPath) {
         console.warn(

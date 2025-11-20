@@ -76,13 +76,17 @@ export function SessionDetail() {
   // Extract GPS data from session events
   const killLocations = createMemo(() => {
     if (!session()) return [];
-    return session()!
-      .events.filter((e) => e.type === "MOB_KILLED")
-      .map((e) => ({
-        location: e.payload.location,
-        mobName: e.payload.mobName,
-        timestamp: e.timestamp,
-      }));
+    return (
+      session()!
+        .events.filter((e) => e.type === "MOB_KILLED")
+        .map((e) => ({
+          location: e.payload.location,
+          mobName: e.payload.mobName,
+          timestamp: e.timestamp,
+        }))
+        // Filter out invalid GPS coordinates (0,0) which indicate no GPS data was available
+        .filter((kill) => kill.location.lon !== 0 || kill.location.lat !== 0)
+    );
   });
 
   const deathLocations = createMemo(() => {

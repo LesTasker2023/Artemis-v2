@@ -467,20 +467,31 @@ export class LogParser {
     const events: SessionEvent[] = [];
     let currentLootBatch: SessionEvent[] = [];
     let lastEventTimestamp = 0;
-    let lastGPSLocation: { lon: number; lat: number } = { lon: 0, lat: 0 };
     const LOOT_BATCH_TIMEOUT = 2000; // 2 seconds - if loot events are more than 2s apart, they're from different kills
+    const GPS_TAG_WINDOW = 5000; // 5 seconds - GPS ping after kill to tag location
 
     for (const result of results) {
       if (!result.event) continue;
 
       const event = result.event;
 
-      // Track GPS updates
+      // Handle GPS updates - retroactively tag the most recent MOB_KILLED event
       if (event.type === 'GPS_UPDATE' && event.payload.location) {
-        // Ensure location has both lon and lat before updating
         const loc = event.payload.location;
-        if (loc.lon !== undefined && loc.lat !== undefined) {
-          lastGPSLocation = { lon: loc.lon, lat: loc.lat };
+        if (loc.lon !== undefined && loc.lat !== undefined && loc.lon !== 0 && loc.lat !== 0) {
+          // Look back for the most recent MOB_KILLED event within the GPS_TAG_WINDOW
+          for (let i = events.length - 1; i >= 0; i--) {
+            const prevEvent = events[i];
+            if (prevEvent.type === 'MOB_KILLED') {
+              const timeDiff = event.timestamp - prevEvent.timestamp;
+              // If the GPS ping is within 5 seconds after the kill, tag it
+              if (timeDiff >= 0 && timeDiff <= GPS_TAG_WINDOW) {
+                // Update the kill location with the GPS ping
+                prevEvent.payload.location = { lon: loc.lon, lat: loc.lat };
+                break; // Only tag the most recent kill
+              }
+            }
+          }
         }
       }
 
@@ -488,8 +499,8 @@ export class LogParser {
       if (event.type === 'LOOT_RECEIVED') {
         // If time gap is large, flush previous batch and start new one
         if (currentLootBatch.length > 0 && event.timestamp - lastEventTimestamp > LOOT_BATCH_TIMEOUT) {
-          // Previous loot batch is complete - add mob kill with last GPS
-          events.push(...this.finalizeLootBatch(currentLootBatch, lastGPSLocation));
+          // Previous loot batch is complete - add mob kill (location will be tagged by subsequent GPS ping)
+          events.push(...this.finalizeLootBatch(currentLootBatch));
           currentLootBatch = [];
         }
         
@@ -499,7 +510,7 @@ export class LogParser {
       } else {
         // Non-loot event - flush any pending loot batch first
         if (currentLootBatch.length > 0) {
-          events.push(...this.finalizeLootBatch(currentLootBatch, lastGPSLocation));
+          events.push(...this.finalizeLootBatch(currentLootBatch));
           currentLootBatch = [];
         }
         
@@ -511,7 +522,7 @@ export class LogParser {
 
     // Flush any remaining loot batch
     if (currentLootBatch.length > 0) {
-      events.push(...this.finalizeLootBatch(currentLootBatch, lastGPSLocation));
+      events.push(...this.finalizeLootBatch(currentLootBatch));
     }
 
     return events;
@@ -519,11 +530,10 @@ export class LogParser {
 
   /**
    * Finalize a batch of loot events by aggregating them and adding a MOB_KILLED event
-   * Uses the last known GPS location for kill positioning
+   * Location will be tagged by subsequent GPS_UPDATE event (when user presses location button)
    */
   private static finalizeLootBatch(
-    lootEvents: SessionEvent[],
-    lastGPSLocation: { lon: number; lat: number }
+    lootEvents: SessionEvent[]
   ): SessionEvent[] {
     if (lootEvents.length === 0) return [];
 
@@ -541,8 +551,8 @@ export class LogParser {
         mobName: 'Unknown Creature', // We don't know mob name from loot alone
         mobId: `mob-${firstLoot.timestamp}`,
         location: {
-          lon: lastGPSLocation.lon,
-          lat: lastGPSLocation.lat,
+          lon: 0, // Will be updated by GPS_UPDATE event if user presses location button
+          lat: 0,
         },
       },
     };

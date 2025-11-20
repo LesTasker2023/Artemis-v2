@@ -33,7 +33,7 @@ export default function Settings() {
         console.error("Failed to load user:", error);
       }
     }
-    
+
     // Get app version
     if (window.electron?.getAppVersion) {
       try {
@@ -43,7 +43,7 @@ export default function Settings() {
         console.error("Failed to get app version:", error);
       }
     }
-    
+
     // Auto-detect chat.log path if not set
     if (!chatLogPath() && window.electron?.logWatcher) {
       try {
@@ -65,17 +65,17 @@ export default function Settings() {
       } catch (error) {
         console.error("Failed to open releases page:", error);
         // Fallback to window.open
-        window.open(repoUrl, '_blank');
+        window.open(repoUrl, "_blank");
       }
     } else {
       // Fallback for web
-      window.open(repoUrl, '_blank');
+      window.open(repoUrl, "_blank");
     }
   };
 
   const handleBrowseChatLog = async () => {
     if (!window.electron?.logWatcher) return;
-    
+
     try {
       const result = await window.electron.logWatcher.browsePath();
       if (result.success && result.path) {
@@ -89,13 +89,15 @@ export default function Settings() {
 
   const handleAutoDetect = async () => {
     if (!window.electron?.logWatcher) return;
-    
+
     try {
       const result = await window.electron.logWatcher.detectPath();
       if (result.success && result.path) {
         setChatLogPath(result.path);
       } else {
-        alert("Could not auto-detect chat.log location. Please browse manually.");
+        alert(
+          "Could not auto-detect chat.log location. Please browse manually."
+        );
       }
     } catch (error) {
       console.error("Failed to auto-detect chat.log:", error);
@@ -212,12 +214,15 @@ export default function Settings() {
                   </Button>
                 </div>
                 <p class="text-xs text-primary/40 mt-2">
-                  ARTEMIS reads this file to track your hunting session automatically.
-                  Common locations:
+                  ARTEMIS reads this file to track your hunting session
+                  automatically. Common locations:
                 </p>
                 <ul class="text-xs text-primary/40 mt-1 ml-4 space-y-1">
                   <li>• Documents\Entropia Universe\chat.log</li>
-                  <li>• C:\Program Files (x86)\Steam\steamapps\common\Entropia Universe\chat.log</li>
+                  <li>
+                    • C:\Program Files (x86)\Steam\steamapps\common\Entropia
+                    Universe\chat.log
+                  </li>
                 </ul>
               </div>
             </div>
@@ -332,15 +337,17 @@ export default function Settings() {
         <Card>
           <div class="p-6">
             <h2 class="text-xl font-semibold text-white mb-4">About</h2>
-            
+
             <div class="space-y-4">
               <div class="flex items-center justify-between p-4 bg-background-lighter rounded-lg">
                 <div>
                   <div class="text-white font-medium">Version</div>
-                  <div class="text-sm text-primary/60 font-mono">{appVersion() || 'Loading...'}</div>
+                  <div class="text-sm text-primary/60 font-mono">
+                    {appVersion() || "Loading..."}
+                  </div>
                 </div>
-                <Button 
-                  onClick={handleCheckForUpdates} 
+                <Button
+                  onClick={handleCheckForUpdates}
                   variant="secondary"
                   icon={Download}
                   size="sm"
@@ -348,7 +355,7 @@ export default function Settings() {
                   Check for Updates
                 </Button>
               </div>
-              
+
               <p class="text-xs text-primary/60">
                 ARTEMIS is an open-source hunting tracker for Entropia Universe.
                 Visit GitHub for updates, bug reports, and feature requests.
