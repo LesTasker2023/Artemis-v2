@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths-ignore:
-      - '**.md'
-      - '.github/**'
+      - "**.md"
+      - ".github/**"
 
 permissions:
   contents: write
@@ -14,20 +14,20 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-      
+          node-version: "20"
+          cache: "npm"
+
       - name: Check if version bump needed
         id: check_version
         run: |
@@ -41,14 +41,14 @@ jobs:
             echo "Proceeding with version bump"
           }
         shell: pwsh
-      
+
       - name: Bump version
         if: steps.check_version.outputs.skip == 'false'
         id: bump_version
         run: |
           $pkg = Get-Content package.json -Raw | ConvertFrom-Json
           $version = $pkg.version
-          
+
           # Parse version (e.g., "2.0.0-alpha.10")
           if ($version -match '^(\d+\.\d+\.\d+)-alpha\.(\d+)$') {
             $base = $matches[1]
@@ -59,15 +59,15 @@ jobs:
             Write-Error "Version format not recognized: $version"
             exit 1
           }
-          
+
           # Update package.json
           $pkg.version = $newVersion
           $pkg | ConvertTo-Json -Depth 100 | Set-Content package.json -NoNewline
-          
+
           echo "new_version=$newVersion" >> $env:GITHUB_OUTPUT
           echo "Bumped version: $version -> $newVersion"
         shell: pwsh
-      
+
       - name: Commit version bump
         if: steps.check_version.outputs.skip == 'false'
         run: |
@@ -77,7 +77,7 @@ jobs:
           git commit -m "chore: bump version to ${{ steps.bump_version.outputs.new_version }} [skip ci]"
           git push
         shell: pwsh
-      
+
       - name: Get final version
         id: final_version
         run: |
@@ -85,18 +85,18 @@ jobs:
           echo "version=$version" >> $env:GITHUB_OUTPUT
           echo "Building version: $version"
         shell: pwsh
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Build Electron main and preload
         run: node build-electron.js
-      
+
       - name: Build Electron app
         run: npm run build:electron
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -111,7 +111,7 @@ jobs:
             dist-release/latest.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Summary
         run: |
           echo "✅ Released ARTEMIS v${{ steps.final_version.outputs.version }}"

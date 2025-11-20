@@ -109,3 +109,14 @@ v1 (legacy) sessions can be imported via `LegacyMigrator`.
 🚧 **In Development** - Not ready for production use.
 
 See `ROADMAP.md` for development timeline.
+
+
+##  Auto-Update Testing
+
+This version tests the automatic update system. GitHub Actions automatically:
+- Increments version on every push to main
+- Builds Windows installer
+- Creates GitHub release
+- Distributes to all users within 1 hour
+
+**Test timestamp:** 2025-11-20 14:30:01
