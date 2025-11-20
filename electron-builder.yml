@@ -1,6 +1,7 @@
 appId: com.lestasker.artemis
 productName: ARTEMIS
 copyright: Copyright © 2024 Les Tasker
+artifactName: "${productName}-Setup-${version}.${ext}"
 
 directories:
   output: dist-release
