@@ -137,6 +137,7 @@ contextBridge.exposeInMainWorld('electron', {
 export interface ElectronAPI {
   getAppVersion: () => Promise<string>;
   getUserDataPath: () => Promise<string>;
+  openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
   session: {
     save: (session: Session) => Promise<{ success: boolean }>;
     findById: (id: string) => Promise<Session | null>;
@@ -150,6 +151,7 @@ export interface ElectronAPI {
   };
   logWatcher: {
     detectPath: () => Promise<{ success: boolean; path: string | null; error?: string }>;
+    browsePath: () => Promise<{ success: boolean; path: string | null; error?: string }>;
     start: (config: { logPath?: string; sessionId: string; userId: string }) => Promise<{ success: boolean; path?: string; error?: string }>;
     stop: () => Promise<{ success: boolean; error?: string }>;
     status: () => Promise<{ isRunning: boolean; position: number }>;
