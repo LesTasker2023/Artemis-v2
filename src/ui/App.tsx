@@ -1,7 +1,6 @@
 import { HashRouter, Route } from "@solidjs/router";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./pages/Dashboard";
-import { Sessions } from "./pages/Sessions";
 import { SessionDetail } from "./pages/SessionDetail";
 import { GPS } from "./pages/GPS";
 import ActiveSession from "./pages/ActiveSession";
@@ -61,7 +60,6 @@ export default function App() {
       {/* Main app routes with layout */}
       <HashRouter root={Layout}>
         <Route path="/" component={Dashboard} />
-        <Route path="/sessions" component={Sessions} />
         <Route path="/session/:id" component={SessionDetail} />
         <Route path="/gps" component={GPS} />
         <Route path="/active" component={ActiveSession} />

@@ -69,7 +69,7 @@ export const commonChartOptions: Partial<ChartOptions<any>> = {
       displayColors: true,
       callbacks: {
         // Format numbers with 2 decimals
-        label: (context) => {
+        label: (context: any) => {
           let label = context.dataset.label || '';
           if (label) {
             label += ': ';

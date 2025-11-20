@@ -242,15 +242,19 @@ export async function initSessionStore() {
                             const identification = result.data;
                             
                             // UPDATE: Set the mob name in the event
-                            updatedEvents[eventIndex].payload.mobName = identification.mobName;
-                            updatedEvents[eventIndex].payload.mobId = identification.mobId;
+                            const killEvent = updatedEvents[eventIndex];
+                            if (killEvent && killEvent.type === 'MOB_KILLED') {
+                              killEvent.payload.mobName = identification.mobName;
+                              killEvent.payload.mobId = identification.mobName.toLowerCase().replace(/\s+/g, '-');
+                            }
                             
                             // Save updated events back to session
-                            setCurrentSession(prev => {
+                            // Update using setActiveSession to trigger reactivity
+                            setActiveSession(prev => {
                               if (!prev) return prev;
                               return {
                                 ...prev,
-                                events: [...updatedEvents]
+                                events: updatedEvents
                               };
                             });
                             
