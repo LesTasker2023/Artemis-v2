@@ -28,7 +28,7 @@ export const HUDOverlay: Component = () => {
   const [session, setSession] = createSignal<Session | null>(null);
   const [loadout, setLoadout] = createSignal<Loadout | null>(null);
   const [mode, setMode] = createSignal<"combat" | "standard">("combat");
-  
+
   // Auto-keypress state
   const [fKeyActive, setFKeyActive] = createSignal(false);
   const [eKeyActive, setEKeyActive] = createSignal(false);
@@ -173,19 +173,19 @@ export const HUDOverlay: Component = () => {
         fKeyInterval = null;
       }
       setFKeyActive(false);
-      console.log('[HUDOverlay] F key auto-press stopped');
+      console.log("[HUDOverlay] F key auto-press stopped");
     } else {
       // Start F key
       setFKeyActive(true);
-      console.log('[HUDOverlay] F key auto-press started');
-      
+      console.log("[HUDOverlay] F key auto-press started");
+
       const sendFKey = async () => {
-        const result = await window.electron?.keyboard.sendKeys('f');
+        const result = await window.electron?.keyboard.sendKeys("f");
         if (!result?.success) {
-          console.error('[HUDOverlay] Failed to send F key:', result?.error);
+          console.error("[HUDOverlay] Failed to send F key:", result?.error);
         }
       };
-      
+
       // Send immediately, then repeat
       sendFKey();
       fKeyInterval = setInterval(() => {
@@ -204,19 +204,19 @@ export const HUDOverlay: Component = () => {
         eKeyInterval = null;
       }
       setEKeyActive(false);
-      console.log('[HUDOverlay] E key auto-press stopped');
+      console.log("[HUDOverlay] E key auto-press stopped");
     } else {
       // Start E key
       setEKeyActive(true);
-      console.log('[HUDOverlay] E key auto-press started');
-      
+      console.log("[HUDOverlay] E key auto-press started");
+
       const sendEKey = async () => {
-        const result = await window.electron?.keyboard.sendKeys('e');
+        const result = await window.electron?.keyboard.sendKeys("e");
         if (!result?.success) {
-          console.error('[HUDOverlay] Failed to send E key:', result?.error);
+          console.error("[HUDOverlay] Failed to send E key:", result?.error);
         }
       };
-      
+
       // Send immediately, then repeat
       sendEKey();
       eKeyInterval = setInterval(() => {
@@ -491,20 +491,32 @@ export const HUDOverlay: Component = () => {
         </div>
         <div class="keypress-controls">
           <button
-            class={`keypress-btn ${fKeyActive() ? 'keypress-btn-active' : ''}`}
+            class={`keypress-btn ${fKeyActive() ? "keypress-btn-active" : ""}`}
             onClick={toggleFKey}
-            title={fKeyActive() ? 'Stop F key auto-press' : 'Start F key auto-press (1s interval)'}
+            title={
+              fKeyActive()
+                ? "Stop F key auto-press"
+                : "Start F key auto-press (1s interval)"
+            }
           >
             <span class="keypress-key">F</span>
-            <span class="keypress-label">{fKeyActive() ? 'ACTIVE' : 'START'}</span>
+            <span class="keypress-label">
+              {fKeyActive() ? "ACTIVE" : "START"}
+            </span>
           </button>
           <button
-            class={`keypress-btn ${eKeyActive() ? 'keypress-btn-active' : ''}`}
+            class={`keypress-btn ${eKeyActive() ? "keypress-btn-active" : ""}`}
             onClick={toggleEKey}
-            title={eKeyActive() ? 'Stop E key auto-press' : 'Start E key auto-press (1s interval)'}
+            title={
+              eKeyActive()
+                ? "Stop E key auto-press"
+                : "Start E key auto-press (1s interval)"
+            }
           >
             <span class="keypress-key">E</span>
-            <span class="keypress-label">{eKeyActive() ? 'ACTIVE' : 'START'}</span>
+            <span class="keypress-label">
+              {eKeyActive() ? "ACTIVE" : "START"}
+            </span>
           </button>
         </div>
       </div>
