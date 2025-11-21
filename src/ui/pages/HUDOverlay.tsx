@@ -28,6 +28,12 @@ export const HUDOverlay: Component = () => {
   const [session, setSession] = createSignal<Session | null>(null);
   const [loadout, setLoadout] = createSignal<Loadout | null>(null);
   const [mode, setMode] = createSignal<"combat" | "standard">("combat");
+  
+  // Auto-keypress state
+  const [fKeyActive, setFKeyActive] = createSignal(false);
+  const [eKeyActive, setEKeyActive] = createSignal(false);
+  let fKeyInterval: NodeJS.Timeout | null = null;
+  let eKeyInterval: NodeJS.Timeout | null = null;
 
   // Debug: Track session updates
   createEffect(() => {
@@ -155,6 +161,79 @@ export const HUDOverlay: Component = () => {
       return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     return `${minutes}:${secs.toString().padStart(2, "0")}`;
   };
+
+  // ============================================================
+  // AUTO-KEYPRESS FUNCTIONS
+  // ============================================================
+  const toggleFKey = () => {
+    if (fKeyActive()) {
+      // Stop F key
+      if (fKeyInterval) {
+        clearInterval(fKeyInterval);
+        fKeyInterval = null;
+      }
+      setFKeyActive(false);
+      console.log('[HUDOverlay] F key auto-press stopped');
+    } else {
+      // Start F key
+      setFKeyActive(true);
+      console.log('[HUDOverlay] F key auto-press started');
+      
+      const sendFKey = async () => {
+        const result = await window.electron?.keyboard.sendKeys('f');
+        if (!result?.success) {
+          console.error('[HUDOverlay] Failed to send F key:', result?.error);
+        }
+      };
+      
+      // Send immediately, then repeat
+      sendFKey();
+      fKeyInterval = setInterval(() => {
+        // Add human variance: 950-1050ms instead of exactly 1000ms
+        const variance = Math.random() * 100 - 50; // -50 to +50ms
+        setTimeout(sendFKey, variance);
+      }, 1000);
+    }
+  };
+
+  const toggleEKey = () => {
+    if (eKeyActive()) {
+      // Stop E key
+      if (eKeyInterval) {
+        clearInterval(eKeyInterval);
+        eKeyInterval = null;
+      }
+      setEKeyActive(false);
+      console.log('[HUDOverlay] E key auto-press stopped');
+    } else {
+      // Start E key
+      setEKeyActive(true);
+      console.log('[HUDOverlay] E key auto-press started');
+      
+      const sendEKey = async () => {
+        const result = await window.electron?.keyboard.sendKeys('e');
+        if (!result?.success) {
+          console.error('[HUDOverlay] Failed to send E key:', result?.error);
+        }
+      };
+      
+      // Send immediately, then repeat
+      sendEKey();
+      eKeyInterval = setInterval(() => {
+        // Add human variance: 950-1050ms instead of exactly 1000ms
+        const variance = Math.random() * 100 - 50; // -50 to +50ms
+        setTimeout(sendEKey, variance);
+      }, 1000);
+    }
+  };
+
+  // Cleanup on unmount
+  onMount(() => {
+    return () => {
+      if (fKeyInterval) clearInterval(fKeyInterval);
+      if (eKeyInterval) clearInterval(eKeyInterval);
+    };
+  });
 
   // ============================================================
   // COMBAT MODE - Ultra minimal
@@ -401,6 +480,32 @@ export const HUDOverlay: Component = () => {
               <span class="info-value">{loadout()?.name}</span>
             </div>
           </Show>
+        </div>
+      </div>
+
+      {/* Auto-Keypress Controls */}
+      <div class="detail-card">
+        <div class="detail-header">
+          <Zap size={14} />
+          <span>AUTO-KEYPRESS</span>
+        </div>
+        <div class="keypress-controls">
+          <button
+            class={`keypress-btn ${fKeyActive() ? 'keypress-btn-active' : ''}`}
+            onClick={toggleFKey}
+            title={fKeyActive() ? 'Stop F key auto-press' : 'Start F key auto-press (1s interval)'}
+          >
+            <span class="keypress-key">F</span>
+            <span class="keypress-label">{fKeyActive() ? 'ACTIVE' : 'START'}</span>
+          </button>
+          <button
+            class={`keypress-btn ${eKeyActive() ? 'keypress-btn-active' : ''}`}
+            onClick={toggleEKey}
+            title={eKeyActive() ? 'Stop E key auto-press' : 'Start E key auto-press (1s interval)'}
+          >
+            <span class="keypress-key">E</span>
+            <span class="keypress-label">{eKeyActive() ? 'ACTIVE' : 'START'}</span>
+          </button>
         </div>
       </div>
     </div>
@@ -914,6 +1019,63 @@ export const HUDOverlay: Component = () => {
           font-weight: 600;
           font-family: 'Courier New', monospace;
           color: white;
+        }
+
+        /* Auto-Keypress Controls */
+        .keypress-controls {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+        }
+
+        .keypress-btn {
+          background: rgba(30, 41, 59, 0.8);
+          border: 2px solid rgba(96, 165, 250, 0.3);
+          border-radius: 8px;
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          color: rgba(148, 163, 184, 0.9);
+        }
+
+        .keypress-btn:hover {
+          background: rgba(30, 41, 59, 1);
+          border-color: rgba(96, 165, 250, 0.5);
+          transform: translateY(-1px);
+        }
+
+        .keypress-btn-active {
+          background: rgba(34, 197, 94, 0.2);
+          border-color: #22c55e;
+          color: #22c55e;
+          animation: pulse-border 2s ease-in-out infinite;
+        }
+
+        .keypress-btn-active:hover {
+          background: rgba(34, 197, 94, 0.3);
+        }
+
+        @keyframes pulse-border {
+          0%, 100% { border-color: #22c55e; }
+          50% { border-color: rgba(34, 197, 94, 0.5); }
+        }
+
+        .keypress-key {
+          font-size: 24px;
+          font-weight: 900;
+          font-family: 'Courier New', monospace;
+          line-height: 1;
+        }
+
+        .keypress-label {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 1px;
+          text-transform: uppercase;
         }
 
         /* Color utilities */

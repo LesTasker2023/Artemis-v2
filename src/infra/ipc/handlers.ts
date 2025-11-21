@@ -16,7 +16,7 @@ import { LogWatcher } from '../logwatcher/LogWatcher';
 import { getGPSCaptureService } from '../automation/GPSCaptureService';
 import { getUserDataPath } from '../db/connection';
 import { getEquipmentDataService, EquipmentType } from '../../core/services/EquipmentDataService';
-import { KeyboardService } from '../automation/KeyboardService';
+import { KeyboardService, ScanCodes } from '../automation/KeyboardService';
 import path from 'path';
 
 // Global log watcher instance
@@ -486,9 +486,13 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('keyboard:sendKeys', async (_event, keys: string) => {
     console.log(`[IPC] 🎹 Keyboard automation requested - keys: "${keys}"`);
     
-    // For now, only comma is supported (location ping)
+    // Support comma, F, and E keys
     if (keys === ',') {
       return await KeyboardService.triggerLocationPing();
+    } else if (keys === 'f' || keys === 'F') {
+      return await KeyboardService.sendScanCode(ScanCodes.F, 20);
+    } else if (keys === 'e' || keys === 'E') {
+      return await KeyboardService.sendScanCode(ScanCodes.E, 20);
     }
     
     console.warn(`[IPC] ⚠️ Unsupported key: "${keys}"`);

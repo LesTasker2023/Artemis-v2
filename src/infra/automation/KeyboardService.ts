@@ -22,6 +22,8 @@ export const ScanCodes = {
   ENTER: 0x1C,
   SPACE: 0x39,
   ESC: 0x01,
+  F: 0x21,  // F key for interactions
+  E: 0x12,  // E key for interactions
 } as const;
 
 export type ScanCode = typeof ScanCodes[keyof typeof ScanCodes];

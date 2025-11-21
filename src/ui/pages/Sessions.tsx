@@ -111,10 +111,19 @@ export function Sessions() {
 
                     {/* Profit */}
                     <div class="flex items-center gap-2">
-                      <DollarSign size={16} class={session.stats.profit >= 0 ? "text-green-500" : "text-red-500"} />
+                      <DollarSign
+                        size={16}
+                        class={
+                          session.stats.profit >= 0
+                            ? "text-green-500"
+                            : "text-red-500"
+                        }
+                      />
                       <div>
                         <div class="text-xs text-primary/40">Profit</div>
-                        <div class={`font-mono font-semibold ${session.stats.profit >= 0 ? "text-green-500" : "text-red-500"}`}>
+                        <div
+                          class={`font-mono font-semibold ${session.stats.profit >= 0 ? "text-green-500" : "text-red-500"}`}
+                        >
                           {session.stats.profit.toFixed(2)} PED
                         </div>
                       </div>
